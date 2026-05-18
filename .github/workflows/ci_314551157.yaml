@@ -1,0 +1,45 @@
+name: CI 314551157
+
+on:
+  push:
+
+jobs:
+  ci:
+    name: Typecheck, format, and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Run tests
+        run: |
+          mkdir -p reports
+          npm test -- --reporter=default --reporter=junit --outputFile=reports/junit.xml
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v2
+        if: always() && hashFiles('reports/junit.xml') != ''
+        with:
+          name: Vitest test results
+          path: reports/junit.xml
+          reporter: java-junit
+          fail-on-error: false
